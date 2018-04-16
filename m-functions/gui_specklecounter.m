@@ -22,6 +22,18 @@ h_panel_controls=uipanel('Title','Control','Parent',fig_gui,...
 h_panel_image=uipanel('Title','Viewer','Parent',fig_gui,...
     'FontSize',11,'Backgroundcolor',get(fig_gui,'color'),...
     'Position',[.15,.05,.67,.92]);
+h_subpanel_currentResults=uipanel('Title','Current view',...
+    'Parent',h_panel_results,...
+    'FontSize',10,'Backgroundcolor',get(fig_gui,'color'),...
+    'Units','normalized','Position',[.05,.83,.9,.15]);
+h_subpanel_selectedResults=uipanel('Title','Popular thresholds',...
+    'Parent',h_panel_results,...
+    'FontSize',10,'Backgroundcolor',get(fig_gui,'color'),...
+    'Units','normalized','Position',[.05,.45,.9,.32]);
+h_subpanel_legendResults=uipanel('Title','Legend',...
+    'Parent',h_panel_results,...
+    'FontSize',10,'Backgroundcolor',get(fig_gui,'color'),...
+    'Units','normalized','Position',[.05,.03,.9,.25]);
 
 % - components inside image panel
 ax_view=axes('Parent',h_panel_image,...
@@ -55,9 +67,9 @@ h_button_nextFrame = uicontrol('Style','Pushbutton',...
     'String','Next','Fontsize',10,...
     'Units','normalized','Position',[.1 .8 .82 .08],...
     'Callback',{@callback_showNextFrame});
-h_button_save = uicontrol('Style','Pushbutton',...
+h_button_saveFile = uicontrol('Style','Pushbutton',...
     'Parent',h_panel_controls,...
-    'String','Save','Fontsize',10,...
+    'String','Save to file','Fontsize',10,...
     'Units','normalized','Position',[.1 .13 .82 .08],...
     'Callback',{@callback_showNextFrame});
 h_button_exit = uicontrol('Style','Pushbutton',...
@@ -96,6 +108,39 @@ h_slider_frame = uicontrol('Style','slider',...
     'String','Threshold',...
     'Callback',{@callback_changeFrame});
 
+% - components inside results panel
+h_text_curRes_thres=uicontrol('Style','text',...
+    'Parent',h_subpanel_currentResults,...
+    'String',['Th = 0.5',10,'  (??, ???)'],'Fontsize',10,...
+    'Units','normalized','Position',[.1 .01 .85 .9],...
+    'Horizontalalignment','left',...
+    'Backgroundcolor',get(fig_gui,'color'));
+h_text_selRes_thres20=uicontrol('Style','text',...
+    'Parent',h_subpanel_selectedResults,...
+    'String',['Th = 0.20',10,'  (??, ???)'],'Fontsize',10,...
+    'Units','normalized','Position',[.1 .65 .85 .3],...
+    'Horizontalalignment','left',...
+    'Backgroundcolor',get(fig_gui,'color'));
+h_text_selRes_thres40=uicontrol('Style','text',...
+    'Parent',h_subpanel_selectedResults,...
+    'String',['Th = 0.40',10,'  (??, ???)'],'Fontsize',10,...
+    'Units','normalized','Position',[.1 .35 .85 .3],...
+    'Horizontalalignment','left',...
+    'Backgroundcolor',get(fig_gui,'color'));
+h_text_selRes_thres60=uicontrol('Style','text',...
+    'Parent',h_subpanel_selectedResults,...
+    'String',['Th = 0.60',10,'  (??, ???)'],'Fontsize',10,...
+    'Units','normalized','Position',[.1 .05 .85 .3],...
+    'Horizontalalignment','left',...
+    'Backgroundcolor',get(fig_gui,'color'));
+h_text_legRes_leg=uicontrol('Style','text',...
+    'Parent',h_subpanel_legendResults,...
+    'String',['Th - threshold',10,'(n, px) - speckles info',10,10,'n - ammount',10,'px - avg size [px]'],'Fontsize',10,...
+    'Units','normalized','Position',[.05 .05 .9 .9],...
+    'Horizontalalignment','left',...
+    'Backgroundcolor',get(fig_gui,'color'));
+
+
 
 % Initialization tasks
 if(isempty(varargin))
@@ -114,7 +159,7 @@ if(~isempty(data))
     framesN=size(data,3);
     thres_val=0.5;
     set(h_slider_frame,'Min',0,'Max',framesN);
-    updateViewer(frameid);
+    updateViewer(frameid,1);
 end
 
 % Callbacks for gui
@@ -123,7 +168,7 @@ end
             return;
         end
         frameid=max(1,frameid-1);
-        updateViewer(frameid);
+        updateViewer(frameid,1);
     end
 
     function callback_showNextFrame(~,~)
@@ -131,7 +176,7 @@ end
             return;
         end
         frameid=min(framesN,frameid+1);
-        updateViewer(frameid);
+        updateViewer(frameid,1);
     end
 
     function callback_quit(~,~)
@@ -156,12 +201,16 @@ end
         val=round(val);
         val=max(1,min(val,framesN));
         frameid=val;
-        updateViewer(frameid);
+        updateViewer(frameid,1);
     end
 
 
 % Utility functions for gui
-    function updateViewer(id)
+    function updateViewer(id,varargin)
+        % Update viewer
+        % If varargin != [] ---> new frame selected :. update speckles
+        % information for selected thresholds
+        
         % Get image
         I=data(:,:,id);
         
@@ -184,6 +233,54 @@ end
         
         % Update frame information
         set(h_text_frame,'String',['Frame ',num2str(frameid),'/',num2str(framesN)]);
+        
+        % Update results section
+        [n,px]=specklesInfo(I_thres);
+        set(h_text_curRes_thres,'String',['Th = ',num2str(thres_val,'%0.2f'),10,'  (',num2str(n), ', ',num2str(px,'%0.2f'),')']);
+        
+        if(~isempty(varargin))
+            
+            % Th = 0.20
+            % Apply threshold
+            I_thres=false(size(I));
+            I_thres(I>0.20)=true;
+            % Update results section
+            [n,px]=specklesInfo(I_thres);
+            set(h_text_selRes_thres20,'String',['Th = 0.20',10,'  (',num2str(n), ', ',num2str(px,'%0.2f'),')']);
+            
+            % Th = 0.40
+            % Apply threshold
+            I_thres=false(size(I));
+            I_thres(I>0.40)=true;
+            % Update results section
+            [n,px]=specklesInfo(I_thres);
+            set(h_text_selRes_thres40,'String',['Th = 0.40',10,'  (',num2str(n), ', ',num2str(px,'%0.2f'),')']);
+            
+            % Th = 0.60
+            % Apply threshold
+            I_thres=false(size(I));
+            I_thres(I>0.60)=true;
+            % Update results section
+            [n,px]=specklesInfo(I_thres);
+            set(h_text_selRes_thres60,'String',['Th = 0.60',10,'  (',num2str(n), ', ',num2str(px,'%0.2f'),')']);
+        end
+        
+    end
+
+    function [n,px]=specklesInfo(bin)
+        % Gets speckles info in input binary image "bin":
+        % - n: ammount of speckles
+        % - px: average size of speckles [px]
+        
+        % Find connected components in "bin"
+        cc=bwconncomp(bin);
+        
+        % Ammount of speckles
+        n=cc.NumObjects;
+        
+        % Average Size
+        px=nnz(bin)/n;
+        
     end
 
 end
