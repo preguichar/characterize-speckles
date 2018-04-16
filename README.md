@@ -5,7 +5,6 @@ Project with functions to aid the characterization of laser speckles
 
 Goal: Interactive visualization of speckle data.
 
-#################################################
 
 # Folder m-functions
 
