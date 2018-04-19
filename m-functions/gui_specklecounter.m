@@ -59,6 +59,13 @@ h_text_nodata=uicontrol('Style','text',...
     'fontsize',30,'horizontalalignment','center',...
     'Visible','off',...
     'backgroundcolor',get(fig_gui,'color'));
+h_text_savingData=uicontrol('Style','text',...
+    'Parent',h_panel_image,...
+    'String','Saving data...',...
+    'Units','normalized','Position',[.1 .4 .8 .2],...
+    'fontsize',30,'horizontalalignment','center',...
+    'Visible','off',...
+    'backgroundcolor',get(fig_gui,'color'));
 h_text_frame=uicontrol('Style','text',...
     'Parent',h_panel_image,...
     'String','Frame 1',...
@@ -70,22 +77,27 @@ h_text_frame=uicontrol('Style','text',...
 h_button_previousFrame = uicontrol('Style','Pushbutton',...
     'Parent',h_panel_controls,...
     'String','Previous','Fontsize',10,...
-    'Units','normalized','Position',[.1 .9 .82 .08],...
+    'Units','normalized','Position',[.07 .9 .86 .08],...
     'Callback',{@callback_showPreviousFrame});
 h_button_nextFrame = uicontrol('Style','Pushbutton',...
     'Parent',h_panel_controls,...
     'String','Next','Fontsize',10,...
-    'Units','normalized','Position',[.1 .8 .82 .08],...
+    'Units','normalized','Position',[.07 .8 .86 .08],...
     'Callback',{@callback_showNextFrame});
 h_button_saveFile = uicontrol('Style','Pushbutton',...
     'Parent',h_panel_controls,...
-    'String','Save to file','Fontsize',10,...
-    'Units','normalized','Position',[.1 .13 .82 .08],...
-    'Callback',{@callback_showNextFrame});
+    'String','Save current view','Fontsize',10,...
+    'Units','normalized','Position',[.07 .23 .86 .08],...
+    'Callback',{@callback_saveFrame});
+h_button_saveallFile = uicontrol('Style','Pushbutton',...
+    'Parent',h_panel_controls,...
+    'String','Save all','Fontsize',10,...
+    'Units','normalized','Position',[.07 .13 .86 .08],...
+    'Callback',{@callback_saveAllFrames});
 h_button_exit = uicontrol('Style','Pushbutton',...
     'Parent',h_panel_controls,...
     'String','Exit','Fontsize',10,...
-    'Units','normalized','Position',[.1 .03 .82 .08],...
+    'Units','normalized','Position',[.07 .03 .86 .08],...
     'Callback',{@callback_quit});
 h_text_slider=uicontrol('Style','text',...
     'Parent',h_panel_controls,...
@@ -144,8 +156,8 @@ if(~isempty(data))
     tab_specklesInfo=[];
     hist_specklesInfo=[];
     set(h_slider_frame,'Min',0,'Max',framesN);
-    for ii=1:numel(ax_hist)
-        set(ax_hist(ii),'Visible','on');
+    for i=1:numel(ax_hist)
+        set(ax_hist(i),'Visible','on');
     end
     updateViewer(frameid,1);
 end
@@ -165,6 +177,26 @@ end
         end
         frameid=min(framesN,frameid+1);
         updateViewer(frameid,1);
+    end
+
+    function callback_saveFrame(~,~)
+        if(isempty(data))
+            return;
+        end
+        set(h_text_savingData,'Visible','on');
+        saveFrameToFile();
+        set(h_text_savingData,'Visible','off');
+    end
+
+    function callback_saveAllFrames(~,~)
+        if(isempty(data))
+            return;
+        end
+        
+        set(h_text_savingData,'Visible','on');
+        pause on; pause (0.5); pause off
+        saveAllFramesToFile();
+        set(h_text_savingData,'Visible','off');
     end
 
     function callback_quit(~,~)
@@ -237,37 +269,37 @@ end
         
         % Create table data
         if(isempty(tab_specklesInfo))
-            tab_specklesInfo=zeros(4,3);
+            tab_specklesInfo=zeros(4,4);
             hist_specklesInfo=cell(4,1);
         end
         
         % Apply user defined threshold 'th' on the original image 'I'
         I_thres=false(size(I));
         I_thres(I>th)=true;
-        [n,px,pxs]=specklesInfo(I_thres);
-        tab_specklesInfo(1,:)=[th, n, px];
+        [n,px_avg,px_stdvar,pxs]=specklesInfo(I_thres);
+        tab_specklesInfo(1,:)=[th, n, px_avg, px_stdvar];
         hist_specklesInfo{1}=pxs;
         
         if(~isempty(varargin)) % New frame :. get results for .2, .4, .6
             % Apply threshold = 0.20 on the original image 'I'
             I_thres=false(size(I));
             I_thres(I>.2)=true;
-            [n,px,pxs]=specklesInfo(I_thres);
-            tab_specklesInfo(2,:)=[.2, n, px];
+            [n,px_avg,px_stdvar,pxs]=specklesInfo(I_thres);
+            tab_specklesInfo(2,:)=[.2, n, px_avg, px_stdvar];
             hist_specklesInfo{2}=pxs;
             
             % Apply threshold = 0.40 on the original image 'I'
             I_thres=false(size(I));
             I_thres(I>.4)=true;
-            [n,px,pxs]=specklesInfo(I_thres);
-            tab_specklesInfo(3,:)=[.4, n, px];
+            [n,px_avg,px_stdvar,pxs]=specklesInfo(I_thres);
+            tab_specklesInfo(3,:)=[.4, n, px_avg, px_stdvar];
             hist_specklesInfo{3}=pxs;
             
             % Apply threshold = 0.60 on the original image 'I'
             I_thres=false(size(I));
             I_thres(I>.6)=true;
-            [n,px,pxs]=specklesInfo(I_thres);
-            tab_specklesInfo(4,:)=[.6, n, px];
+            [n,px_avg,px_stdvar,pxs]=specklesInfo(I_thres);
+            tab_specklesInfo(4,:)=[.6, n, px_avg, px_stdvar];
             hist_specklesInfo{4}=pxs;
         end
         
@@ -275,7 +307,7 @@ end
         % Check if the table exists. If not, create it.
         if(~exist('h_table_tabRes','var'))
             h_table_tabRes=uitable('Parent',h_panel_results,...
-                'ColumnName',{'Threshold','Ammount','Avg. size'},'RowName',[],...
+                'ColumnName',{'Threshold','Ammount','Avg. size','Std. var.'},'RowName',[],...
                 'Units','normalized','Position',[.0,.0,1,1],...
                 'Fontsize',10,'Enable','off',...
                 'Data',tab_specklesInfo);
@@ -286,15 +318,15 @@ end
         % Update Histogram plot
 %         histRange=(0:.1:.9)+0.05;
         histRange=10;
-        for i=1:numel(ax_hist)
+        for ii=1:numel(ax_hist)
             % The user selected threshold is guaranteed to be updated.
-            [bincount,centers]=hist(hist_specklesInfo{i},histRange);
-            bincount=bincount/numel(hist_specklesInfo{i});
-            h_bar=bar(ax_hist(i),centers,bincount,'hist');
+            [bincount,centers]=hist(hist_specklesInfo{ii},histRange);
+            bincount=bincount/numel(hist_specklesInfo{ii});
+            h_bar=bar(ax_hist(ii),centers,bincount,'hist');
             set(h_bar,'facecolor','c','edgecolor','b');
-            hold(ax_hist(i),'on');
-            plot(ax_hist(i),[tab_specklesInfo(i,3) tab_specklesInfo(i,3)],[0 1],'-r')
-            hold(ax_hist(i),'off');
+            hold(ax_hist(ii),'on');
+            plot(ax_hist(ii),[tab_specklesInfo(ii,3) tab_specklesInfo(ii,3)],[0 1],'-r')
+            hold(ax_hist(ii),'off');
             
             if(isempty(varargin)) % The frame is not new :. do not update for .2, .4 and .6
                break;
@@ -302,10 +334,12 @@ end
         end
     end
 
-    function [n,px_avg,px_ind]=specklesInfo(bin)
+    function [n,px_avg,px_stdvar,px_ind]=specklesInfo(bin)
         % Gets speckles info in input binary image "bin":
         % - n: ammount of speckles
-        % - px: average size of speckles [px]
+        % - px_avg: average size of speckles [px]
+        % - px_stdvar: standard variation from px_avg [px]
+        % - px_ind: size of speckles [px]
         
         % Find connected components in "bin"
         cc=bwconncomp(bin);
@@ -317,8 +351,101 @@ end
         px_avg=nnz(bin)/n;
         
         % Speckles size
-        px_ind=cellfun(@numel,cc.PixelIdxList);
+        px_ind=cellfun(@numel,cc.PixelIdxList); % - array (1 x n)
+        px_ind=px_ind';
         
+        % Standard variation
+        px_stdvar=std(px_ind);
+        
+    end
+
+    function saveFrameToFile()
+        % Save current frame to .mat file
+        if(~exist('outdata','dir'))
+            mkdir('outdata');
+        end
+        outFileName=['outdata/',dataName,'_frame',num2str(frameid),'.mat'];
+        
+        % Output variable
+        savevar=cell(5,5);
+        
+        % Legend
+        savevar{1,1}='threshold';
+        savevar{1,2}='ammount';
+        savevar{1,3}='avg. size';
+        savevar{1,4}='std. var.';
+        savevar{1,5}='sizes';
+        
+        % Entries
+        for ii=1:4
+            savevar{ii+1,1}=tab_specklesInfo(ii,1);
+            savevar{ii+1,2}=tab_specklesInfo(ii,2);
+            savevar{ii+1,3}=tab_specklesInfo(ii,3);
+            savevar{ii+1,4}=tab_specklesInfo(ii,4);
+            savevar{ii+1,5}=hist_specklesInfo(ii);
+        end
+        
+        % Save variable
+        save(outFileName,'savevar');
+    end
+
+    function saveAllFramesToFile()
+        % Save current frame to .mat file
+        if(~exist('outdata','dir'))
+            mkdir('outdata');
+        end
+        outFileName=['outdata/',dataName,'.mat'];
+        
+        % Output variable
+        savevar=cell(5,5);
+        
+        % Legend
+        savevar{1,1}='threshold';
+        savevar{1,2}='ammount';
+        savevar{1,3}='avg. size';
+        savevar{1,4}='std. var.';
+        savevar{1,5}='sizes';
+        
+        % Allocate memory for entries
+        temp_n=zeros(framesN,1);                % 2
+        temp_avgSize=zeros(framesN,1);          % 3
+        temp_stdvar=zeros(framesN,1);           % 4
+        temp_sizes=cell(framesN,1);             % 5
+        
+        % Entries
+        thresholds=[thres_val, 0.2, 0.4, 0.6];
+        
+        for ii=1:4
+            savevar{ii+1,1}=thresholds(ii);
+            for jj=1:framesN
+                % Get data
+                I=data(:,:,jj);
+                
+                % Normalize image
+                I=double(I);
+                I=I-min(min(I));
+                I=I/max(max(I));
+                
+                % Apply threshold
+                I_thres=false(size(I));
+                I_thres(I>thresholds(ii))=true;
+                
+                [n,px_avg,px_stdvar,pxs]=specklesInfo(I_thres);
+                
+                % Store variables
+                temp_n(jj)=n;
+                temp_avgSize(jj)=px_avg;
+                temp_stdvar(jj)=px_stdvar;
+                temp_sizes{jj}=pxs;
+            end
+            savevar{ii+1,2}=temp_n;
+            savevar{ii+1,3}=temp_avgSize;
+            savevar{ii+1,4}=temp_stdvar;
+            savevar{ii+1,5}=temp_sizes;
+        end
+        
+        % Save variable
+        save(outFileName,'savevar');
     end
 
 end
