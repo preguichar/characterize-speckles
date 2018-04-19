@@ -1,4 +1,4 @@
-function varargout = gui_specklecounter(varargin)
+function gui_specklecounter(varargin)
 % GUI_SPECKLECOUNTER  Brief description.
 %                     User interface to count specles given an input image file.
 
@@ -15,44 +15,50 @@ fig_gui = figure('Visible','on',...
 % - panels
 h_panel_results=uipanel('Title','Results','Parent',fig_gui,...
     'FontSize',11,'Backgroundcolor',get(fig_gui,'color'),...
-    'Position',[.83,.05,.15,.92]);
+    'Position',[.15,.03,.47,.3]);
+h_panel_hist=uipanel('Title','Histogram','Parent',fig_gui,...
+    'FontSize',11,'Backgroundcolor',get(fig_gui,'color'),...
+    'Position',[.65,.03,.33,.95]);
 h_panel_controls=uipanel('Title','Control','Parent',fig_gui,...
     'FontSize',11,'Backgroundcolor',get(fig_gui,'color'),...
-    'Position',[.02,.05,.12,.92]);
+    'Position',[.02,.03,.12,.95]);
 h_panel_image=uipanel('Title','Viewer','Parent',fig_gui,...
     'FontSize',11,'Backgroundcolor',get(fig_gui,'color'),...
-    'Position',[.15,.05,.67,.92]);
-h_subpanel_currentResults=uipanel('Title','Current view',...
-    'Parent',h_panel_results,...
-    'FontSize',10,'Backgroundcolor',get(fig_gui,'color'),...
-    'Units','normalized','Position',[.05,.83,.9,.15]);
-h_subpanel_selectedResults=uipanel('Title','Popular thresholds',...
-    'Parent',h_panel_results,...
-    'FontSize',10,'Backgroundcolor',get(fig_gui,'color'),...
-    'Units','normalized','Position',[.05,.45,.9,.32]);
-h_subpanel_legendResults=uipanel('Title','Legend',...
-    'Parent',h_panel_results,...
-    'FontSize',10,'Backgroundcolor',get(fig_gui,'color'),...
-    'Units','normalized','Position',[.05,.03,.9,.25]);
+    'Position',[.15,.37,.47,.61]);
+
+% - components inside histogram panel
+ax_hist=zeros(4,1);
+ax_hist(1)=axes('Parent',h_panel_hist,...
+    'units','normalized','Position',[.1 .8 .8 .19],...
+    'box','on','Visible','off');
+ax_hist(2)=axes('Parent',h_panel_hist,...
+    'units','normalized','Position',[.1 .55 .8 .19],...
+    'box','on','Visible','off');
+ax_hist(3)=axes('Parent',h_panel_hist,...
+    'units','normalized','Position',[.1 .3 .8 .19],...
+    'box','on','Visible','off');
+ax_hist(4)=axes('Parent',h_panel_hist,...
+    'units','normalized','Position',[.1 .05 .8 .19],...
+    'box','on','Visible','off');
 
 % - components inside image panel
 ax_view=axes('Parent',h_panel_image,...
-    'units','normalized','Position',[.0 .05 .5 .76],...
+    'units','normalized','Position',[.0 .05 .5 .8],...
     'box','on','xtick',[],'ytick',[]);
 ax_thres=axes('Parent',h_panel_image,...
-    'units','normalized','Position',[.5 .05 .5 .76],...
+    'units','normalized','Position',[.5 .05 .5 .8],...
     'box','on','xtick',[],'ytick',[]);
 h_text_nodata=uicontrol('Style','text',...
     'Parent',h_panel_image,...
     'String','No data',...
-    'Units','normalized','Position',[.1 .5 .8 .1],...
+    'Units','normalized','Position',[.1 .3 .8 .3],...
     'fontsize',30,'horizontalalignment','center',...
     'Visible','off',...
     'backgroundcolor',get(fig_gui,'color'));
 h_text_frame=uicontrol('Style','text',...
     'Parent',h_panel_image,...
     'String','Frame 1',...
-    'Units','normalized','Position',[.1 .9 .8 .08],...
+    'Units','normalized','Position',[.0 .9 1 .08],...
     'fontsize',10,'horizontalalignment','center',...
     'backgroundcolor',get(fig_gui,'color'));
 
@@ -109,37 +115,7 @@ h_slider_frame = uicontrol('Style','slider',...
     'Callback',{@callback_changeFrame});
 
 % - components inside results panel
-h_text_curRes_thres=uicontrol('Style','text',...
-    'Parent',h_subpanel_currentResults,...
-    'String',['Th = 0.5',10,'  (??, ???)'],'Fontsize',10,...
-    'Units','normalized','Position',[.1 .01 .85 .9],...
-    'Horizontalalignment','left',...
-    'Backgroundcolor',get(fig_gui,'color'));
-h_text_selRes_thres20=uicontrol('Style','text',...
-    'Parent',h_subpanel_selectedResults,...
-    'String',['Th = 0.20',10,'  (??, ???)'],'Fontsize',10,...
-    'Units','normalized','Position',[.1 .65 .85 .3],...
-    'Horizontalalignment','left',...
-    'Backgroundcolor',get(fig_gui,'color'));
-h_text_selRes_thres40=uicontrol('Style','text',...
-    'Parent',h_subpanel_selectedResults,...
-    'String',['Th = 0.40',10,'  (??, ???)'],'Fontsize',10,...
-    'Units','normalized','Position',[.1 .35 .85 .3],...
-    'Horizontalalignment','left',...
-    'Backgroundcolor',get(fig_gui,'color'));
-h_text_selRes_thres60=uicontrol('Style','text',...
-    'Parent',h_subpanel_selectedResults,...
-    'String',['Th = 0.60',10,'  (??, ???)'],'Fontsize',10,...
-    'Units','normalized','Position',[.1 .05 .85 .3],...
-    'Horizontalalignment','left',...
-    'Backgroundcolor',get(fig_gui,'color'));
-h_text_legRes_leg=uicontrol('Style','text',...
-    'Parent',h_subpanel_legendResults,...
-    'String',['Th - threshold',10,'(n, px) - speckles info',10,10,'n - ammount',10,'px - avg size [px]'],'Fontsize',10,...
-    'Units','normalized','Position',[.05 .05 .9 .9],...
-    'Horizontalalignment','left',...
-    'Backgroundcolor',get(fig_gui,'color'));
-
+% h_table_tabRes -- Created after
 
 
 % Initialization tasks
@@ -149,16 +125,24 @@ if(isempty(varargin))
     set(h_text_frame,'Visible','off');
     set(h_text_nodata,'Visible','on');
     data=[];
-    frameid=[];
 else
     data=varargin{1};
+    if(size(varargin,2)>1)
+        dataName=varargin{2};
+        set(fig_gui,'Name',['Speckles counter: ',dataName]);
+    end
 end
 
 if(~isempty(data))
     frameid=1;
     framesN=size(data,3);
     thres_val=0.5;
+    tab_specklesInfo=[];
+    hist_specklesInfo=[];
     set(h_slider_frame,'Min',0,'Max',framesN);
+    for ii=1:numel(ax_hist)
+        set(ax_hist(ii),'Visible','on');
+    end
     updateViewer(frameid,1);
 end
 
@@ -235,39 +219,80 @@ end
         set(h_text_frame,'String',['Frame ',num2str(frameid),'/',num2str(framesN)]);
         
         % Update results section
-        [n,px]=specklesInfo(I_thres);
-        set(h_text_curRes_thres,'String',['Th = ',num2str(thres_val,'%0.2f'),10,'  (',num2str(n), ', ',num2str(px,'%0.2f'),')']);
-        
-        if(~isempty(varargin))
-            
-            % Th = 0.20
-            % Apply threshold
-            I_thres=false(size(I));
-            I_thres(I>0.20)=true;
-            % Update results section
-            [n,px]=specklesInfo(I_thres);
-            set(h_text_selRes_thres20,'String',['Th = 0.20',10,'  (',num2str(n), ', ',num2str(px,'%0.2f'),')']);
-            
-            % Th = 0.40
-            % Apply threshold
-            I_thres=false(size(I));
-            I_thres(I>0.40)=true;
-            % Update results section
-            [n,px]=specklesInfo(I_thres);
-            set(h_text_selRes_thres40,'String',['Th = 0.40',10,'  (',num2str(n), ', ',num2str(px,'%0.2f'),')']);
-            
-            % Th = 0.60
-            % Apply threshold
-            I_thres=false(size(I));
-            I_thres(I>0.60)=true;
-            % Update results section
-            [n,px]=specklesInfo(I_thres);
-            set(h_text_selRes_thres60,'String',['Th = 0.60',10,'  (',num2str(n), ', ',num2str(px,'%0.2f'),')']);
+        if(isempty(varargin))
+            updateResults(I,thres_val); % Frame did not change
+        else
+            updateResults(I,thres_val,1); % Frame changed
         end
-        
     end
 
-    function [n,px]=specklesInfo(bin)
+    function updateResults(I,th,varargin)
+        % Updates speckles info in the table
+        % - I: original image in view
+        % - th: user defined threshold
+        
+        % Create table data
+        if(isempty(tab_specklesInfo))
+            tab_specklesInfo=zeros(4,3);
+            hist_specklesInfo=cell(4,1);
+        end
+        
+        % Apply user defined threshold 'th' on the original image 'I'
+        I_thres=false(size(I));
+        I_thres(I>th)=true;
+        [n,px,pxs]=specklesInfo(I_thres);
+        tab_specklesInfo(1,:)=[th, n, px];
+        hist_specklesInfo{1}=pxs;
+        
+        if(~isempty(varargin)) % New frame :. get results for .2, .4, .6
+            % Apply threshold = 0.20 on the original image 'I'
+            I_thres=false(size(I));
+            I_thres(I>.2)=true;
+            [n,px,pxs]=specklesInfo(I_thres);
+            tab_specklesInfo(2,:)=[.2, n, px];
+            hist_specklesInfo{2}=pxs;
+            
+            % Apply threshold = 0.40 on the original image 'I'
+            I_thres=false(size(I));
+            I_thres(I>.4)=true;
+            [n,px,pxs]=specklesInfo(I_thres);
+            tab_specklesInfo(3,:)=[.4, n, px];
+            hist_specklesInfo{3}=pxs;
+            
+            % Apply threshold = 0.60 on the original image 'I'
+            I_thres=false(size(I));
+            I_thres(I>.6)=true;
+            [n,px,pxs]=specklesInfo(I_thres);
+            tab_specklesInfo(4,:)=[.6, n, px];
+            hist_specklesInfo{4}=pxs;
+        end
+        
+        % Update table
+        % Check if the table exists. If not, create it.
+        if(~exist('h_table_tabRes','var'))
+            h_table_tabRes=uitable('Parent',h_panel_results,...
+                'ColumnName',{'Threshold','Ammount','Avg. size'},'RowName',[],...
+                'Units','normalized','Position',[.0,.0,1,1],...
+                'Fontsize',10,'Enable','off',...
+                'Data',tab_specklesInfo);
+        else
+            set(h_table_tabRes,'Data',tab_specklesInfo);
+        end
+        
+        % Update Histogram plot
+%         histRange=(0:0.2:.6)+0.1;
+%         hist(ax_hist(1),hist_specklesInfo{1},histRange);
+        plot(ax_hist(1),hist_specklesInfo{1});
+        
+        if(~isempty(varargin)) % New frame :. get results for .2, .4, .6
+            for i=1:numel(ax_hist)
+                plot(ax_hist(i),hist_specklesInfo{i});
+%                 hist(ax_hist(i),hist_specklesInfo{i},histRange);
+            end
+        end
+    end
+
+    function [n,px_avg,px_ind]=specklesInfo(bin)
         % Gets speckles info in input binary image "bin":
         % - n: ammount of speckles
         % - px: average size of speckles [px]
@@ -279,7 +304,11 @@ end
         n=cc.NumObjects;
         
         % Average Size
-        px=nnz(bin)/n;
+        px_avg=nnz(bin)/n;
+        
+        % Speckles size
+        px_ind=cellfun(@numel,cc.PixelIdxList);
+        px_ind=px_ind./(cc.ImageSize(1)*cc.ImageSize(2));
         
     end
 
