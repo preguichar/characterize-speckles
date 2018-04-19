@@ -29,17 +29,21 @@ h_panel_image=uipanel('Title','Viewer','Parent',fig_gui,...
 % - components inside histogram panel
 ax_hist=zeros(4,1);
 ax_hist(1)=axes('Parent',h_panel_hist,...
-    'units','normalized','Position',[.1 .8 .8 .19],...
-    'box','on','Visible','off');
+    'units','normalized','Position',[.1 .8 .8 .18],...
+    'box','on','Visible','off',...
+    'fontsize',8);
 ax_hist(2)=axes('Parent',h_panel_hist,...
-    'units','normalized','Position',[.1 .55 .8 .19],...
-    'box','on','Visible','off');
+    'units','normalized','Position',[.1 .55 .8 .18],...
+    'box','on','Visible','off',...
+    'fontsize',8);
 ax_hist(3)=axes('Parent',h_panel_hist,...
-    'units','normalized','Position',[.1 .3 .8 .19],...
-    'box','on','Visible','off');
+    'units','normalized','Position',[.1 .31 .8 .18],...
+    'box','on','Visible','off',...
+    'fontsize',8);
 ax_hist(4)=axes('Parent',h_panel_hist,...
-    'units','normalized','Position',[.1 .05 .8 .19],...
-    'box','on','Visible','off');
+    'units','normalized','Position',[.1 .08 .8 .18],...
+    'box','on','Visible','off',...
+    'fontsize',8);
 
 % - components inside image panel
 ax_view=axes('Parent',h_panel_image,...
@@ -280,14 +284,20 @@ end
         end
         
         % Update Histogram plot
-%         histRange=(0:0.2:.6)+0.1;
-%         hist(ax_hist(1),hist_specklesInfo{1},histRange);
-        plot(ax_hist(1),hist_specklesInfo{1});
-        
-        if(~isempty(varargin)) % New frame :. get results for .2, .4, .6
-            for i=1:numel(ax_hist)
-                plot(ax_hist(i),hist_specklesInfo{i});
-%                 hist(ax_hist(i),hist_specklesInfo{i},histRange);
+%         histRange=(0:.1:.9)+0.05;
+        histRange=10;
+        for i=1:numel(ax_hist)
+            % The user selected threshold is guaranteed to be updated.
+            [bincount,centers]=hist(hist_specklesInfo{i},histRange);
+            bincount=bincount/numel(hist_specklesInfo{i});
+            h_bar=bar(ax_hist(i),centers,bincount,'hist');
+            set(h_bar,'facecolor','c','edgecolor','b');
+            hold(ax_hist(i),'on');
+            plot(ax_hist(i),[tab_specklesInfo(i,3) tab_specklesInfo(i,3)],[0 1],'-r')
+            hold(ax_hist(i),'off');
+            
+            if(isempty(varargin)) % The frame is not new :. do not update for .2, .4 and .6
+               break;
             end
         end
     end
@@ -308,7 +318,6 @@ end
         
         % Speckles size
         px_ind=cellfun(@numel,cc.PixelIdxList);
-        px_ind=px_ind./(cc.ImageSize(1)*cc.ImageSize(2));
         
     end
 
